@@ -1,6 +1,7 @@
 package gemist
 
 import (
+	"compress/gzip"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,8 +14,11 @@ import (
 )
 
 func TestParseBroadcast_audio(t *testing.T) {
-	r, err := os.Open("testdata/broadcast-audio.html")
+	r, err := os.Open("testdata/broadcast-audio.html.gz")
 	require.NoError(t, err, "error opening broadcast page")
+
+	cr, err := gzip.NewReader(r)
+	require.NoError(t, err, "error opening broadcast page (gzip)")
 
 	l, err := time.LoadLocation("Europe/Amsterdam")
 	require.NoError(t, err, "error loading time location")
@@ -31,13 +35,16 @@ func TestParseBroadcast_audio(t *testing.T) {
 		MediaURL:        "http://download.omroep.nl/vpro/29/08/57/39/POMS_VPRO_396139.mp3",
 	}
 
-	ep, err := ParseBroadcast(r)
+	ep, err := ParseBroadcast(cr)
 	assertParsedBroadcast(t, &_ep, ep, err)
 }
 
 func TestParseBroadcast_video(t *testing.T) {
-	r, err := os.Open("testdata/broadcast-video.html")
+	r, err := os.Open("testdata/broadcast-video.html.gz")
 	require.NoError(t, err, "error opening broadcast page")
+
+	cr, err := gzip.NewReader(r)
+	require.NoError(t, err, "error opening broadcast page (gzip)")
 
 	l, err := time.LoadLocation("Europe/Amsterdam")
 	require.NoError(t, err, "error loading time location")
@@ -53,13 +60,16 @@ func TestParseBroadcast_video(t *testing.T) {
 		MediaURL:        "http://www.npo.nl/zembla/18-03-2007/VARA_101141965",
 	}
 
-	ep, err := ParseBroadcast(r)
+	ep, err := ParseBroadcast(cr)
 	assertParsedBroadcast(t, &_ep, ep, err)
 }
 
 func TestParseBroadcast_video_NPO3(t *testing.T) {
-	r, err := os.Open("testdata/broadcast-video-npo3.html")
+	r, err := os.Open("testdata/broadcast-video-npo3.html.gz")
 	require.NoError(t, err, "error opening broadcast page")
+
+	cr, err := gzip.NewReader(r)
+	require.NoError(t, err, "error opening broadcast page (gzip)")
 
 	l, err := time.LoadLocation("Europe/Amsterdam")
 	require.NoError(t, err, "error loading time location")
@@ -75,7 +85,7 @@ func TestParseBroadcast_video_NPO3(t *testing.T) {
 		MediaURL:        "http://www.npo.nl/radio-bergeijk-toewijding-in-beeld/25-06-2007/VPRO_1122739",
 	}
 
-	ep, err := ParseBroadcast(r)
+	ep, err := ParseBroadcast(cr)
 	assertParsedBroadcast(t, &_ep, ep, err)
 }
 
