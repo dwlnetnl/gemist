@@ -1,4 +1,5 @@
-# gemist ![GoDoc](https://godoc.org/github.com/dwlnetnl/gemist?status.svg)
+# gemist [![GoDoc](https://godoc.org/github.com/dwlnetnl/gemist?status.svg)](https://godoc.org/github.com/dwlnetnl/gemist)
+
 Package gemist provides functionality for working with Uitzending Gemist content.
 
 ## Example
