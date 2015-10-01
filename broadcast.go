@@ -116,9 +116,9 @@ func ParseBroadcast(r io.Reader) (*Broadcast, error) {
 	}
 
 	// -- Media --
-	media, ok := p.MediaURL(n)
-	if !ok {
-		return nil, errors.New("gemist: error parsing broadcast media URL")
+	media, err := p.MediaURL(n)
+	if err != nil {
+		return nil, err
 	}
 
 	b := Broadcast{
@@ -135,7 +135,7 @@ func ParseBroadcast(r io.Reader) (*Broadcast, error) {
 
 type broadcastParser interface {
 	Length(*xmlpath.Node) (time.Duration, error)
-	MediaURL(*xmlpath.Node) (string, bool)
+	MediaURL(*xmlpath.Node) (string, error)
 }
 
 type videoBroadcastParser struct {
@@ -159,8 +159,13 @@ func (p videoBroadcastParser) Length(n *xmlpath.Node) (len time.Duration, err er
 	return
 }
 
-func (p videoBroadcastParser) MediaURL(n *xmlpath.Node) (string, bool) {
-	return p.m.String(n)
+func (p videoBroadcastParser) MediaURL(n *xmlpath.Node) (url string, err error) {
+	url, ok := p.m.String(n)
+	if !ok {
+		err = errors.New("gemist: error parsing broadcast media URL (video)")
+	}
+
+	return
 }
 
 var broadcastParserV = videoBroadcastParser{
@@ -209,8 +214,13 @@ func (p audioBroadcastParser) Length(n *xmlpath.Node) (len time.Duration, err er
 	return
 }
 
-func (p audioBroadcastParser) MediaURL(n *xmlpath.Node) (string, bool) {
-	return p.m.String(n)
+func (p audioBroadcastParser) MediaURL(n *xmlpath.Node) (url string, err error) {
+	url, ok := p.m.String(n)
+	if !ok {
+		err = errors.New("gemist: error parsing broadcast media URL (audio)")
+	}
+
+	return
 }
 
 var broadcastParserA = audioBroadcastParser{
