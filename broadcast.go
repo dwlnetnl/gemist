@@ -44,10 +44,10 @@ func GetBroadcast(url string) (*Broadcast, error) {
 }
 
 var (
-	pType      = xmlpath.MustCompile("/html/head/meta[@name='og:type']/@content")
-	pLDesc     = xmlpath.MustCompile("//*/div[@class='content']/p/span[3]/text()")
-	pLDescNPO3 = xmlpath.MustCompile("//div[contains(@class,'meta-content')]/div[1]/p[1]/span[3]/text()")
-	pDate      = xmlpath.MustCompile("//span[@itemprop='startDate']/text()")
+	pBType      = xmlpath.MustCompile("/html/head/meta[@name='og:type']/@content")
+	pBLDesc     = xmlpath.MustCompile("//*/div[@class='content']/p/span[3]/text()")
+	pBLDescNPO3 = xmlpath.MustCompile("//div[contains(@class,'meta-content')]/div[1]/p[1]/span[3]/text()")
+	pBDate      = xmlpath.MustCompile("//span[@itemprop='startDate']/text()")
 )
 
 const broadcastDateLayout = "2006-01-02 15:04:05 -0700"
@@ -66,17 +66,17 @@ func ParseBroadcast(r io.Reader) (*Broadcast, error) {
 	}
 
 	// -- LongDescription --
-	longDesc, ok := pLDesc.String(n)
+	longDesc, ok := pBLDesc.String(n)
 	if !ok {
 		// check for NPO3 video page contents
-		longDesc, ok = pLDescNPO3.String(n)
+		longDesc, ok = pBLDescNPO3.String(n)
 	}
 	if !ok {
 		return nil, errors.New("gemist: error parsing broadcast long description")
 	}
 
 	// -- Date --
-	datestr, ok := pDate.String(n)
+	datestr, ok := pBDate.String(n)
 	if !ok {
 		err = errors.New("gemist: error parsing broadcast date")
 		return nil, err
@@ -88,7 +88,7 @@ func ParseBroadcast(r io.Reader) (*Broadcast, error) {
 	}
 
 	// -- Type --
-	typstr, ok := pType.String(n)
+	typstr, ok := pBType.String(n)
 	if !ok {
 		return nil, errors.New("gemist: error parsing broadcast type")
 	}
@@ -174,19 +174,39 @@ var broadcastParserV = videoBroadcastParser{
 }
 
 type audioBroadcastParser struct {
-	lp  *xmlpath.Path
-	lre *regexp.Regexp
-	m   *xmlpath.Path
+	l *xmlpath.Path
+	m *xmlpath.Path
 }
 
 func (p audioBroadcastParser) Length(n *xmlpath.Node) (len time.Duration, err error) {
-	lenstr, ok := p.lp.String(n)
+	lenstr, ok := p.l.String(n)
 	if !ok {
 		err = errors.New("gemist: error parsing broadcast length (audio)")
 		return
 	}
 
-	parts := p.lre.FindStringSubmatch(lenstr)
+	len, err = parseBroadcastLength(lenstr)
+	return
+}
+
+func (p audioBroadcastParser) MediaURL(n *xmlpath.Node) (url string, err error) {
+	url, ok := p.m.String(n)
+	if !ok {
+		err = errors.New("gemist: error parsing broadcast media URL (audio)")
+	}
+
+	return
+}
+
+var broadcastParserA = audioBroadcastParser{
+	l: xmlpath.MustCompile("//span[@class='duration']/text()"),
+	m: xmlpath.MustCompile("/html/head/meta[@name='og:audio']/@content"),
+}
+
+var broadcastLengthRegexp = regexp.MustCompile(`(\d:)?(\d+):(\d+)`)
+
+func parseBroadcastLength(str string) (len time.Duration, err error) {
+	parts := broadcastLengthRegexp.FindStringSubmatch(str)
 	// parts[0] -> matched string
 	// parts[1] -> hours
 	// parts[2] -> minutes
@@ -212,19 +232,4 @@ func (p audioBroadcastParser) Length(n *xmlpath.Node) (len time.Duration, err er
 
 	len += time.Duration(sec) * time.Second
 	return
-}
-
-func (p audioBroadcastParser) MediaURL(n *xmlpath.Node) (url string, err error) {
-	url, ok := p.m.String(n)
-	if !ok {
-		err = errors.New("gemist: error parsing broadcast media URL (audio)")
-	}
-
-	return
-}
-
-var broadcastParserA = audioBroadcastParser{
-	lp:  xmlpath.MustCompile("//span[@class='duration']/text()"),
-	lre: regexp.MustCompile(`(\d:)?(\d+):(\d+)`),
-	m:   xmlpath.MustCompile("/html/head/meta[@name='og:audio']/@content"),
 }
